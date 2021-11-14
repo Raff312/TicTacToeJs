@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>Tic-tac-toe</title>
+        <link rel="stylesheet" href="./styles/style.css">
+    </head>
+    <body>
+        <h1 class="game-title">Tic-Tac-Toe</h1>
+        
+        <div class="menu-wrapper" id="menu-wrapper">
+            <button type="button" class="btn" id="play-btn">Play</button>
+        </div>
+
+        <div class="board-wrapper hide" id="board-wrapper">
+            <div class="board" id="board"></div>
+            <span class="msg" id="end-game-msg"></span>
+            <button type="button" class="btn" onclick="onResetClick()">RESET</button>
+            <button type="button" class="btn" onclick="backToMenu()">Back</button>
+        </div>
+
+        <script type="module" src="./js/controller.js"></script>
+    </body>
+</html>
