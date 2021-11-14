@@ -29,7 +29,7 @@ function initialize() {
 
     setBoardSize();
     gameBoard.initialize();
-    view.renderBoard(size);
+    view.renderBoard(gameBoard.getDimension());
 }
 
 function setBoardSize() {
