@@ -1,14 +1,23 @@
 import * as view from "./view.js";
-import { PLAYER_X_MARKUP, Board } from "./model.js";
+import { PLAYER_X_MARKUP, PLAYER_O_MARKUP, Board } from "./model.js";
+import { GamesRepository } from "./repositories.js";
 
 let gameBoard = new Board();
+const gamesRepository = new GamesRepository();
+await gamesRepository.init();
 
 let username = "";
 let currentMarkup = PLAYER_X_MARKUP;
+let winnerMarkup = currentMarkup;
 let endGameMsg = "";
 let stopGame = false;
 
-let playBtn = document.getElementById("play-btn");
+let xCoords = "";
+let oCoords = "";
+
+const playBtn = document.getElementById("play-btn");
+const listBtn = document.getElementById("list-btn");
+const replyBtn = document.getElementById("reply-btn");
 
 playBtn.addEventListener("click", () => {
     view.hideElement(document.getElementById("menu-wrapper"));
@@ -17,7 +26,21 @@ playBtn.addEventListener("click", () => {
     play();
 });
 
-function play() {
+listBtn.addEventListener("click", () => {
+    view.hideElement(document.getElementById("menu-wrapper"));
+    view.showElement(document.getElementById("list-wrapper"));
+
+    list();
+});
+
+replyBtn.addEventListener("click", () => {
+    view.hideElement(document.getElementById("menu-wrapper"));
+    view.showElement(document.getElementById("reply-wrapper"));
+
+    reply();
+});
+
+async function play() {
     view.clearBoard();
     initialize();
     gameLoop();
@@ -30,6 +53,8 @@ function initialize() {
     setBoardSize();
     gameBoard.initialize();
     view.renderBoard(gameBoard.getDimension());
+    xCoords = "";
+    oCoords = "";
 }
 
 function setBoardSize() {
@@ -47,27 +72,29 @@ function setBoardSize() {
     } while (!isSetSuccess);
 }
 
-function gameLoop() {
+async function gameLoop() {
     if (currentMarkup === gameBoard.getComputerMarkup()) {
         processComputerTurn(currentMarkup);
         endGameMsg = "PC wins the game.";
         currentMarkup = gameBoard.getUserMarkup();
         
         if (stopGame) {
-            endGame();
+            await endGame();
             return;
         }
     }
 
     if (!gameBoard.isFreeSpaceEnough() && !stopGame) {
         endGameMsg = "Draw!";
+        winnerMarkup = "Draw"
         stopGame = true;
-        endGame();
+        await endGame();
     }
 }
 
-function endGame() {
-    view.updateEndMsg(endGameMsg);
+async function endGame() {
+    view.updateMsg("end-game-msg", endGameMsg);
+    await gamesRepository.add(gameBoard, winnerMarkup, xCoords.slice(0, -1), oCoords.slice(0, -1), username);
 }
 
 window.onCellClick = (i, j) => {
@@ -89,17 +116,33 @@ window.onResetClick = () => {
     play();
 }
 
+window.onRenew = () => {
+    document.getElementById("reply").innerHTML = "";
+    view.updateMsg("reply-msg", "");
+    reply();
+}
+
 window.backToMenu = () => {
     resetGame();
+
     view.hideElement(document.getElementById("board-wrapper"));
+    document.getElementById("board").innerHTML = "";
+    
+    view.hideElement(document.getElementById("list-wrapper"));
+    document.getElementById("list").innerHTML = "";
+    
+    view.hideElement(document.getElementById("reply-wrapper"));
+    document.getElementById("reply").innerHTML = "";
+    
     view.showElement(document.getElementById("menu-wrapper"));
 }
 
 function resetGame() {
     currentMarkup = PLAYER_X_MARKUP;
+    winnerMarkup = currentMarkup;
 
     endGameMsg = "";
-    view.updateEndMsg(endGameMsg);
+    view.updateMsg("end-game-msg", endGameMsg);
 
     stopGame = false;
 }
@@ -110,7 +153,9 @@ function processUserTurn(i, j, markup) {
     }
 
     view.setMarkup(i, j, markup);
+    recordMove(i, j);
     stopGame = gameBoard.determineWinner(i, j) !== "";
+    winnerMarkup = currentMarkup;
     endGameMsg = `${username} wins the game.`;
     currentMarkup = gameBoard.getComputerMarkup(currentMarkup);
 }
@@ -129,14 +174,66 @@ function processComputerTurn(markup) {
         try {
             if (gameBoard.setMarkupOnBoard(i, j, markup)) {
                 stopGame = gameBoard.determineWinner(i, j) !== "";
+                winnerMarkup = currentMarkup;
                 answerTaked = true;
             }
         } catch (error) {}
     } while (!answerTaked);
 
     view.setMarkup(i, j, markup);
+    recordMove(i, j);
 }
 
 function getRandInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function recordMove(i, j) {
+    if (currentMarkup === PLAYER_X_MARKUP) {
+        xCoords += `(${i}; ${j}),`;
+    } else {
+        oCoords += `(${i}; ${j}),`;
+    }
+}
+
+async function list() {
+    const records = await gamesRepository.getAll();
+    view.renderList(records);
+}
+
+async function reply() {
+    const id = parseInt(prompt('Enter game ID'));
+    if (!id) {
+        await reply();
+    }
+
+    const game = await gamesRepository.getById(id);
+
+    if (!game) {
+        view.updateMsg("reply-msg", "There is no game with this id");
+        return;
+    }
+
+    const board = new Board();
+    board.setDimension(game.sizeBoard);
+    board.initialize();
+
+    const xCoordsArr = game.xCoords.split(",");
+    const oCoordsArr = game.oCoords.split(",");
+
+    for (let i = 0; i < Math.max(xCoordsArr.length, oCoordsArr.length); i++) {
+        if (xCoordsArr[i]) {
+            const matches = xCoordsArr[i].match(/\d+/g);
+            board.setMarkupOnBoard(matches[0], matches[1], PLAYER_X_MARKUP);
+        }
+        
+        if (oCoordsArr[i]) {
+            const matches = oCoordsArr[i].match(/\d+/g);
+            board.setMarkupOnBoard(matches[0], matches[1], PLAYER_O_MARKUP);
+        }
+
+        view.addBoardToReply(board);
+    }
+
+    view.updateMsg("reply-msg", `Winner: ${game.winnerMarkup}`);
 }

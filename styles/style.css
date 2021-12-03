@@ -6,28 +6,21 @@ body {
     text-align: center;
 }
 
-.menu-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 35px;
-    align-items: center;
-}
-
-.board-wrapper {
+.menu-wrapper, .board-wrapper, .list-wrapper, .reply-wrapper, .reply {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 25px;
 }
 
-.board-wrapper .board {
+.board {
     border: 1px solid black;
     display: grid;
     gap: 0;
     width: fit-content;
 }
 
-.board-wrapper .board .cell {
+.board .cell {
     width: 50px;
     height: 50px;
     line-height: 50px;
@@ -49,8 +42,14 @@ body {
     background: darkred;
 }
 
+.list {
+    font-size: 18px;
+    font-weight: 500;
+}
+
 .btn {
     max-width: 100px;
+    width: 100px;
     border: 1px solid black;
     border-radius: 8px;
     font-size: 19px;

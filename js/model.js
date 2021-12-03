@@ -129,6 +129,10 @@ export class Board {
         }
     }
 
+    getBoardArr() {
+        return this.#boardArr;
+    }
+
     getDimension() {
         return this.#dimension;
     }
